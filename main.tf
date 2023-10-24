@@ -125,7 +125,7 @@ resource "aws_launch_configuration" "pokemon_lc" {
   name             = "pokemon-lc"
   image_id         = "ami-036f5574583e16426"
   instance_type    = "t2.micro"
-  security_groups  = [aws_security_group.pokemon_sg.name]
+  security_groups  = [aws_security_group.pokemon_sg.id]
   key_name         = "EC2Key"
   user_data        = <<-EOF
       #!/bin/bash
@@ -146,49 +146,17 @@ resource "aws_launch_configuration" "pokemon_lc" {
 # Auto Scaling Group
 resource "aws_autoscaling_group" "pokemon_asg" {
   name                 = "pokemon-asg"
-  launch_configuration = aws_launch_configuration.pokemon_lc.name
+  launch_configuration = aws_launch_configuration.pokemon_lc.id
   min_size             = 1
   max_size             = 2
   desired_capacity     = 1
-  vpc_zone_identifier  = [aws_subnet.pokemon_subnet.id, aws_subnet.pokemon_subnet_db.id]
+  vpc_zone_identifier  = [aws_subnet.pokemon_subnet.id]
 
   tag {
     key                 = "Name"
     value               = "pokemonASGInstance"
     propagate_at_launch = true
   }
-}
-
-# Elastic Load Balancer
-resource "aws_elb" "pokemon_elb" {
-  name               = "pokemon-elb"
-  security_groups    = [aws_security_group.pokemon_sg.id]
-  availability_zones = ["us-east-2a", "us-east-2b"]
-
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
-
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    target              = "HTTP:80/"
-    interval            = 30
-  }
-
-  tags = {
-    Name = "pokemonELB"
-  }
-}
-
-# Associate ASG with ELB
-resource "aws_autoscaling_attachment" "pokemon_asg_attachment" {
-  autoscaling_group_name = aws_autoscaling_group.pokemon_asg.name
-  elb                    = aws_elb.pokemon_elb.name
 }
 
 resource "aws_db_subnet_group" "pokemon_db_subnet_group" {
