@@ -60,6 +60,13 @@ resource "aws_security_group" "pokemon_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
     Name = "pokemonSG"
   }
@@ -122,19 +129,27 @@ resource "aws_route_table_association" "pokemon_route_table_association_db" {
 # EC2 Instance
 # Launch Configuration for AutoScaling
 resource "aws_launch_configuration" "pokemon_lc" {
-  name             = "pokemon-lc"
-  image_id         = "ami-036f5574583e16426"
+  name             = "pokemon-lc-goldenpoke"
+  image_id         = "ami-000509bca71760e30"
   instance_type    = "t2.micro"
   security_groups  = [aws_security_group.pokemon_sg.id]
-  key_name         = "EC2Key"
+  key_name         = "OhioKey"
   user_data        = <<-EOF
       #!/bin/bash
       sudo yum update -y
-      sudo yum install -y httpd
-      sudo systemctl start httpd
-      sudo systemctl enable httpd
-      sudo echo "<html><h1>Welcome to Pokemon EC2</h1></html>" > /var/www/html/index.html
+      cd local_Poke
+      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+      . ~/.nvm/nvm.sh
+      nvm install --lts
+      npm init -y
+      npm i express
+      npm i knex
+      npm i mysql
+      npm install ejs
+      node index.js
     EOF
+
+    
 
   lifecycle {
     create_before_destroy = true
@@ -182,6 +197,7 @@ resource "aws_db_instance" "pokemon_db" {
   parameter_group_name = "default.mysql5.7"
   skip_final_snapshot  = true
   publicly_accessible  = true
+  
 
   vpc_security_group_ids = [aws_security_group.pokemon_db_sg.id]
   db_subnet_group_name = aws_db_subnet_group.pokemon_db_subnet_group.name
@@ -189,6 +205,51 @@ resource "aws_db_instance" "pokemon_db" {
   tags = {
     Name = "pokemonDB"
   }
+}
+
+resource "aws_lb" "pokemon_lb" {
+  name               = "pokemon-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.pokemon_sg.id]
+  subnets            = [aws_subnet.pokemon_subnet.id, aws_subnet.pokemon_subnet_db.id]
+
+  tags = {
+    Name = "pokemon-lb"
+  }
+}
+
+resource "aws_lb_target_group" "pokemon_tg" {
+  name     = "pokemon-tg"
+  port     = 3000
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.pokemon_vpc.id
+
+  health_check {
+    path                = "/"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+  }
+}
+
+resource "aws_lb_listener" "pokemon_listener" {
+  load_balancer_arn = aws_lb.pokemon_lb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.pokemon_tg.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "asg_attachment" {
+  autoscaling_group_name = aws_autoscaling_group.pokemon_asg.name
+  lb_target_group_arn = aws_lb_target_group.pokemon_tg.arn
 }
 
 # resource "aws_s3_bucket" "pokemon_web_assets" {
