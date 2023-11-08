@@ -5,7 +5,7 @@ app.set("view engine","ejs");
 const knex = require("knex")({
     client: "mysql",
     connection: {
-        host: "terraform-20231025181136992100000003.ctik8wp0iy1y.us-east-2.rds.amazonaws.com",
+        host: "pokemondb.ctik8wp0iy1y.us-east-2.rds.amazonaws.com",
         user: "admin",
         password: "catchemall",
         database: "pokemon_db",

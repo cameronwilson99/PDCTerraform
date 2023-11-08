@@ -128,51 +128,51 @@ resource "aws_route_table_association" "pokemon_route_table_association_db" {
 
 # EC2 Instance
 # Launch Configuration for AutoScaling
-resource "aws_launch_configuration" "pokemon_lc" {
-  name             = "pokemon-lc-goldenpoke"
-  image_id         = "ami-000509bca71760e30"
-  instance_type    = "t2.micro"
-  security_groups  = [aws_security_group.pokemon_sg.id]
-  key_name         = "OhioKey"
-  user_data        = <<-EOF
-      #!/bin/bash
-      sudo yum update -y
-      cd local_Poke
-      curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-      . ~/.nvm/nvm.sh
-      nvm install --lts
-      npm init -y
-      npm i express
-      npm i knex
-      npm i mysql
-      npm install ejs
-      node index.js
-    EOF
+# resource "aws_launch_configuration" "pokemon_lc" {
+#   name             = "pokemon-lc-goldenpoke"
+#   image_id         = "ami-000509bca71760e30"
+#   instance_type    = "t2.micro"
+#   security_groups  = [aws_security_group.pokemon_sg.id]
+#   key_name         = "OhioKey"
+#   user_data        = <<-EOF
+#       #!/bin/bash
+#       sudo yum update -y
+#       cd local_Poke
+#       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+#       . ~/.nvm/nvm.sh
+#       nvm install --lts
+#       npm init -y
+#       npm i express
+#       npm i knex
+#       npm i mysql
+#       npm install ejs
+#       node index.js
+#     EOF
 
     
 
-  lifecycle {
-    create_before_destroy = true
-  }
+#   lifecycle {
+#     create_before_destroy = true
+#   }
 
-  associate_public_ip_address = true
-}
+#   associate_public_ip_address = true
+# }
 
-# Auto Scaling Group
-resource "aws_autoscaling_group" "pokemon_asg" {
-  name                 = "pokemon-asg"
-  launch_configuration = aws_launch_configuration.pokemon_lc.id
-  min_size             = 1
-  max_size             = 2
-  desired_capacity     = 1
-  vpc_zone_identifier  = [aws_subnet.pokemon_subnet.id]
+# # Auto Scaling Group
+# resource "aws_autoscaling_group" "pokemon_asg" {
+#   name                 = "pokemon-asg"
+#   launch_configuration = aws_launch_configuration.pokemon_lc.id
+#   min_size             = 1
+#   max_size             = 2
+#   desired_capacity     = 1
+#   vpc_zone_identifier  = [aws_subnet.pokemon_subnet.id]
 
-  tag {
-    key                 = "Name"
-    value               = "pokemonASGInstance"
-    propagate_at_launch = true
-  }
-}
+#   tag {
+#     key                 = "Name"
+#     value               = "pokemonASGInstance"
+#     propagate_at_launch = true
+#   }
+# }
 
 resource "aws_db_subnet_group" "pokemon_db_subnet_group" {
   name       = "pokemon_db_subnet_group"
@@ -185,7 +185,8 @@ resource "aws_db_subnet_group" "pokemon_db_subnet_group" {
 
 # RDS Database (MySQL as an example)
 resource "aws_db_instance" "pokemon_db" {
-  db_name = "pokemon_db"
+  db_name    = "pokemon_db"
+  identifier = "pokemondb"
 
   allocated_storage    = 20
   storage_type         = "gp2"
@@ -207,50 +208,50 @@ resource "aws_db_instance" "pokemon_db" {
   }
 }
 
-resource "aws_lb" "pokemon_lb" {
-  name               = "pokemon-lb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.pokemon_sg.id]
-  subnets            = [aws_subnet.pokemon_subnet.id, aws_subnet.pokemon_subnet_db.id]
+# resource "aws_lb" "pokemon_lb" {
+#   name               = "pokemon-lb"
+#   internal           = false
+#   load_balancer_type = "application"
+#   security_groups    = [aws_security_group.pokemon_sg.id]
+#   subnets            = [aws_subnet.pokemon_subnet.id, aws_subnet.pokemon_subnet_db.id]
 
-  tags = {
-    Name = "pokemon-lb"
-  }
-}
+#   tags = {
+#     Name = "pokemon-lb"
+#   }
+# }
 
-resource "aws_lb_target_group" "pokemon_tg" {
-  name     = "pokemon-tg"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.pokemon_vpc.id
+# resource "aws_lb_target_group" "pokemon_tg" {
+#   name     = "pokemon-tg"
+#   port     = 3000
+#   protocol = "HTTP"
+#   vpc_id   = aws_vpc.pokemon_vpc.id
 
-  health_check {
-    path                = "/"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-  }
-}
+#   health_check {
+#     path                = "/"
+#     port                = "traffic-port"
+#     protocol            = "HTTP"
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 2
+#     timeout             = 3
+#     interval            = 30
+#   }
+# }
 
-resource "aws_lb_listener" "pokemon_listener" {
-  load_balancer_arn = aws_lb.pokemon_lb.arn
-  port              = "80"
-  protocol          = "HTTP"
+# resource "aws_lb_listener" "pokemon_listener" {
+#   load_balancer_arn = aws_lb.pokemon_lb.arn
+#   port              = "80"
+#   protocol          = "HTTP"
 
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.pokemon_tg.arn
-  }
-}
+#   default_action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.pokemon_tg.arn
+#   }
+# }
 
-resource "aws_autoscaling_attachment" "asg_attachment" {
-  autoscaling_group_name = aws_autoscaling_group.pokemon_asg.name
-  lb_target_group_arn = aws_lb_target_group.pokemon_tg.arn
-}
+# resource "aws_autoscaling_attachment" "asg_attachment" {
+#   autoscaling_group_name = aws_autoscaling_group.pokemon_asg.name
+#   lb_target_group_arn = aws_lb_target_group.pokemon_tg.arn
+# }
 
 # resource "aws_s3_bucket" "pokemon_web_assets" {
 #   bucket = "pokemon-web-assets-bucket"
