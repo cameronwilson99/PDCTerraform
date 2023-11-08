@@ -1,0 +1,54 @@
+<!-- 
+<html>
+    <head>
+        Welcome to our Pokemon Gallery!
+    </head>
+        <body>
+                <% for (let i=0;i < aPokemonList.length; i++) { %>
+                    <div><%= aPokemonList[i].pokename %></div>
+                    <img src="pokemon/<%= aPokemonList[i].pokename %>.png">
+                    <br>
+                <% } %>
+        </body>
+</html> -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pokémon Cards</title>
+  <link rel="stylesheet" type="text/css" href="public/styles.css">
+</head>
+<body>
+    <div class="header">
+        <!-- Inside your EJS template -->
+        <img src="pokemon/Pokeball.png" class="pokeball left" alt="Pokeball">
+        <h1>Our Favorite Pokemon</h1>
+        <input type="text" id="filterInput" placeholder="Filter by Pokémon name" oninput="filterPokemon()">
+        <img src="pokemon/Pokeball.png" class="pokeball right" alt="Pokeball">
+      </div>
+  <div class="card-container">
+    <% for (var i = 0; i < aPokemonList.length; i++) { %>
+      <div class="card">
+        <h2><%= aPokemonList[i].pokename %></h2>
+        <img src="pokemon/<%= aPokemonList[i].pokename %>.png" alt="<%= aPokemonList[i].name %>">
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>
+<script>
+    function filterPokemon() {
+      const filterInput = document.getElementById('filterInput');
+      const filterValue = filterInput.value.toUpperCase();
+      const cards = document.querySelectorAll('.card');
+  
+      cards.forEach((card) => {
+        const name = card.querySelector('h2').textContent.toUpperCase();
+        if (name.indexOf(filterValue) > -1) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+  
